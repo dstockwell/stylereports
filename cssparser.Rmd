@@ -1,0 +1,70 @@
+---
+title: "cssparser stats"
+output:
+  md_document:
+    variant: markdown_github
+  html_document:
+    toc: true
+    theme: united
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+data <- jsonlite::fromJSON(file("cssparser.json"))
+data <- data$values
+cssparser <- data[data$name == 'css_parser_stats', ]
+cssparser <- cssparser$value
+cssparser$overhead = NULL
+cssparser <- cssparser[cssparser$tokenCount > 0, ]
+cssparser <- na.omit(cssparser)
+cssparser <- as.data.frame(cssparser)
+
+library(ggplot2)
+
+num_observations <- nrow(cssparser)
+under_alloc <- cssparser[cssparser$tokenCount - floor(cssparser$length / 3) > 0, ]
+over_alloc <- cssparser[floor(cssparser$length / 3) - cssparser$tokenCount > 0, ]
+max_over_alloc = max(floor(over_alloc$length / 3) - over_alloc$tokenCount)
+```
+
+Based on `r nrow(cssparser)` observations.
+
+`CSSTokenizer` allocates a vector with space for `length / 3` tokens.
+`r round(nrow(under_alloc) / nrow(cssparser) * 100, 2)`% of the time the allocated vector
+is too small and needs to be resized.
+
+In the cases where more space was allocated than necessary, half the observations
+saw over-allocation by more than `r median((floor(over_alloc$length / 3) - over_alloc$tokenCount) * 20)` `CSSParserTokens`. The worst case, `r over_alloc[max_over_alloc == floor(over_alloc$length / 3) - over_alloc$tokenCount, ]$baseUrl[1]`, over-allocated by
+`r toString(max_over_alloc)` `CSSParserTokens`.
+
+```{r}
+tokens_per_character <- cssparser$length / cssparser$tokenCount
+quantile(tokens_per_character, c(0.25, 0.75, 0.90, 0.95, 0.99, 1))
+```
+
+`r round(nrow(cssparser[cssparser$mode == 5, ]) / nrow(cssparser) * 100, 2)`% of sheets parsed were useragent sheets.
+
+```{r}
+ua_sheets <- cssparser[cssparser$mode == 5, ]
+tokens_per_character <- ua_sheets$length / ua_sheets$tokenCount
+sort(unique(tokens_per_character))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# length/tokens
+ggplot(cssparser, aes(length/tokenCount)) +
+  geom_density(aes(y=..density.., fill=factor(mode)), alpha = 0.5) + scale_x_log10()
+
+ggplot(cssparser, aes(length)) +
+  geom_density(aes(y=..count.., fill=factor(mode)), position = "stack", alpha = 0.5) + scale_x_log10(labels=scales::comma)
+
+ggplot(cssparser, aes(tokenCount)) +
+  geom_density(aes(y=..count.., fill=factor(mode)), position = "stack", alpha = 0.5) + scale_x_log10(labels=scales::comma)
+
+# tokenize vs length
+ggplot(data=cssparser, aes(`CSSParserImpl::parseStyleSheet.tokenize`, length,)) +
+  geom_point(shape=3) + geom_smooth(method=lm)
+
+# parse vs tokens
+ggplot(data=cssparser, aes(`CSSParserImpl::parseStyleSheet.parse`, tokenCount)) +
+  geom_point(shape=3) + geom_smooth(method=lm)
+```
