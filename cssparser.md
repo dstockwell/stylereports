@@ -5,8 +5,8 @@ Based on 4734 observations.
 In the cases where more space was allocated than necessary, half the observations saw over-allocation by more than 8960 `CSSParserTokens`. The worst case, <https://leanpub.com/fonts/314471/50F059BA854EE979B.css>, over-allocated by 441426 `CSSParserTokens`.
 
 ``` r
-tokens_per_character <- cssparser$length / cssparser$tokenCount
-quantile(tokens_per_character, c(0.25, 0.75, 0.90, 0.95, 0.99, 1))
+characters_per_token <- cssparser$length / cssparser$tokenCount
+quantile(characters_per_token, c(0.25, 0.75, 0.90, 0.95, 0.99, 1))
 ```
 
     ##         25%         75%         90%         95%         99%        100% 
@@ -16,8 +16,8 @@ quantile(tokens_per_character, c(0.25, 0.75, 0.90, 0.95, 0.99, 1))
 
 ``` r
 ua_sheets <- cssparser[cssparser$mode == 5, ]
-tokens_per_character <- ua_sheets$length / ua_sheets$tokenCount
-sort(unique(tokens_per_character))
+characters_per_token <- ua_sheets$length / ua_sheets$tokenCount
+sort(unique(characters_per_token))
 ```
 
     ## [1]   5.148530   5.583675   9.509225  19.457317  23.717949  67.888889

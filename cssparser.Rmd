@@ -37,16 +37,16 @@ saw over-allocation by more than `r median((floor(over_alloc$length / 3) - over_
 `r toString(max_over_alloc)` `CSSParserTokens`.
 
 ```{r}
-tokens_per_character <- cssparser$length / cssparser$tokenCount
-quantile(tokens_per_character, c(0.25, 0.75, 0.90, 0.95, 0.99, 1))
+characters_per_token <- cssparser$length / cssparser$tokenCount
+quantile(characters_per_token, c(0.25, 0.75, 0.90, 0.95, 0.99, 1))
 ```
 
 `r round(nrow(cssparser[cssparser$mode == 5, ]) / nrow(cssparser) * 100, 2)`% of sheets parsed were useragent sheets.
 
 ```{r}
 ua_sheets <- cssparser[cssparser$mode == 5, ]
-tokens_per_character <- ua_sheets$length / ua_sheets$tokenCount
-sort(unique(tokens_per_character))
+characters_per_token <- ua_sheets$length / ua_sheets$tokenCount
+sort(unique(characters_per_token))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
