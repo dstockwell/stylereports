@@ -1,0 +1,89 @@
+---
+title: "style update stats"
+output:
+  md_document:
+    variant: markdown_github
+  html_document:
+    toc: true
+    theme: united
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+library(ggplot2)
+```
+
+```{r}
+data <- jsonlite::fromJSON(file("style.json"))
+data <- data$values
+style <- data[data$name == 'style_update_stats', ]
+style <- style$value
+style$overhead = NULL
+style <- style[style$resolverAccessCount > 0, ]
+style <- as.data.frame(style)
+```
+
+Based on `r nrow(style)` `Document::updateStyle` observations.
+
+Callers of Document::updateStyle
+--------------------------------
+```{r}
+v8 <- style[unlist(lapply(style$ancestors, function(x)'V8.Execute' %in% x)), ]
+v8_stack <- nrow(v8) / nrow(style)
+v8_time <- sum(na.omit(v8$`Document::updateStyle`)) / sum(na.omit(style$`Document::updateStyle`))
+```
+
+There were `r length(unique(paste0(style$ancestors)))` unique trace stacks.
+`r round(v8_stack, 2) * 100`% of stacks and
+`r round(v8_time, 2) * 100`% of thread time
+involves `V8.Execute`.
+
+```{r}
+for (i in 1:5) {
+  style[,paste0("ancestor", i)] <- unlist(lapply(style$ancestors, function(x) {
+    v <- unlist(x)[i]
+    return(ifelse(is.null(v), NA, v))
+  }))
+}
+
+
+treemap::treemap(style, index=c("ancestor1", "ancestor2", "ancestor3", "ancestor4", "ancestor5"), vSize=c("Document::updateStyle"))
+```
+
+Style Sharing
+-------------
+
+```{r}
+style$stylesShared <- (style$counters$sharedStyleFound
+                       - style$counters$sharedStyleRejectedByParent
+                       - style$counters$sharedStyleRejectedByUncommonAttributeRules)
+
+ggplot(style, aes(stylesShared/resolverAccessCount)) +
+  geom_line(stat="density") + scale_y_log10()
+
+ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`, resolverAccessCount, color=stylesShared/resolverAccessCount, size=stylesShared/resolverAccessCount)) + geom_point(alpha=0.5) + scale_y_log10() + theme(legend.position="top") + guides(color=FALSE)
+
+ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`/resolverAccessCount, stylesShared/resolverAccessCount)) + geom_point() + scale_x_log10()
+```
+
+Matched properties cache
+------------------------
+
+```{r}
+
+style$stylesMatched <- style$counters$matchedPropertyCacheHit
+
+ggplot(style, aes(stylesMatched/(resolverAccessCount - stylesShared))) +
+  geom_line(stat="density")
+
+ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`, resolverAccessCount, color=stylesMatched/(resolverAccessCount-stylesShared), size=stylesMatched/(resolverAccessCount-stylesShared))) + geom_point(alpha=0.5) + scale_y_log10() + theme(legend.position="top") + guides(color=FALSE)
+
+ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`/resolverAccessCount, stylesMatched/(resolverAccessCount-stylesShared)))+ geom_point() + scale_x_log10()
+```
+
+
+```{r}
+# Too hard to read.
+# ggplot(style, aes(`Document::updateStyle`)) +
+#   geom_density(aes(y=..count.., fill=ancestor2), alpha=1, size=0, position="stack") + scale_x_log10()
+```
