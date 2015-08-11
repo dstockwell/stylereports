@@ -34,8 +34,8 @@ v8_time <- sum(na.omit(v8$`Document::updateStyle`)) / sum(na.omit(style$`Documen
 ```
 
 There were `r length(unique(paste0(style$ancestors)))` unique trace stacks.
-`r round(v8_stack, 2) * 100`% of stacks and
-`r round(v8_time, 2) * 100`% of thread time
+`r round(v8_stack, 4) * 100`% of stacks and
+`r round(v8_time, 4) * 100`% of thread time
 involves `V8.Execute`.
 
 ```{r}
@@ -58,6 +58,12 @@ style$stylesShared <- (style$counters$sharedStyleFound
                        - style$counters$sharedStyleRejectedByParent
                        - style$counters$sharedStyleRejectedByUncommonAttributeRules)
 
+styleWithCounters <- style[!is.na(style$counters$matchedPropertyCacheHit),]
+```
+
+Style sharing rate: `r round(sum(styleWithCounters$stylesShared) / sum(styleWithCounters$resolverAccessCount), 4) * 100`%
+
+```{r}
 ggplot(style, aes(stylesShared/resolverAccessCount)) +
   geom_line(stat="density") + scale_y_log10()
 
@@ -68,6 +74,10 @@ ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`/re
 
 Matched properties cache
 ------------------------
+
+Non-inherited hit rate: `r round(sum(styleWithCounters$counters$matchedPropertyCacheHit) / sum(styleWithCounters$resolverAccessCount - styleWithCounters$stylesShared), 4) * 100`%
+
+Inherited hit rate: `r round(sum(styleWithCounters$counters$matchedPropertyCacheInheritedHit) / sum(styleWithCounters$resolverAccessCount - styleWithCounters$stylesShared), 4) * 100`%
 
 ```{r}
 
@@ -81,9 +91,44 @@ ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`, r
 ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`/resolverAccessCount, stylesMatched/(resolverAccessCount-stylesShared)))+ geom_point(alpha=0.5) + scale_x_log10()
 ```
 
+Rules matched / rejected
+------------------------
+```{r}
+styleWithCounters$counters$rules <- (styleWithCounters$counters$rulesMatched
+                           + styleWithCounters$counters$rulesRejected
+                           + styleWithCounters$counters$rulesFastRejected)
+```
+
+Of the rules considered:
+
+* `r round(sum(styleWithCounters$counters$rulesMatched) / sum(styleWithCounters$counters$rules), 4) * 100`% matched
+* `r round(sum(styleWithCounters$counters$rulesFastRejected) / sum(styleWithCounters$counters$rules), 4) * 100`% were rejected by the bloom filter
+* `r round(sum(styleWithCounters$counters$rulesRejected) / sum(styleWithCounters$counters$rules), 4) * 100`% were rejected by evaluation
 
 ```{r}
-# Too hard to read.
-# ggplot(style, aes(`Document::updateStyle`)) +
-#   geom_density(aes(y=..count.., fill=ancestor2), alpha=1, size=0, position="stack") + scale_x_log10()
+ggplot(style, aes(counters$rulesMatched / (resolverAccessCount - stylesShared))) +
+  geom_line(stat="density")
+
+ggplot(style, aes((counters$rulesRejected + counters$rulesFastRejected) / (resolverAccessCount - stylesShared))) +
+  geom_line(stat="density")
+
+ggplot(style, aes(counters$rulesFastRejected / (counters$rulesRejected + counters$rulesFastRejected))) +
+  geom_line(stat="density")
+```
+
+Styles un/changed
+-----------------
+```{r}
+styleWithUnchanged <- style[!is.na(style$counters$stylesUnchanged), ]
+```
+
+Warning: This section isn't entirely accurate yet.
+
+Based on `r nrow(styleWithUnchanged)` `Document::updateStyle` observations.
+
+`r round(sum(styleWithUnchanged$counters$stylesUnchanged) / sum(styleWithUnchanged$resolverAccessCount), 4) * 100`% of styles produced were identical to the previous state.
+
+```{r}
+ggplot(styleWithUnchanged, aes(counters$stylesUnchanged / resolverAccessCount)) +
+  geom_line(stat="density") + xlim(0, 1)
 ```
