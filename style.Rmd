@@ -63,7 +63,7 @@ ggplot(style, aes(stylesShared/resolverAccessCount)) +
 
 ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`, resolverAccessCount, color=stylesShared/resolverAccessCount, size=stylesShared/resolverAccessCount)) + geom_point(alpha=0.5) + scale_y_log10() + theme(legend.position="top") + guides(color=FALSE)
 
-ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`/resolverAccessCount, stylesShared/resolverAccessCount)) + geom_point() + scale_x_log10()
+ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`/resolverAccessCount, stylesShared/resolverAccessCount)) + geom_point(alpha=0.5) + scale_x_log10()
 ```
 
 Matched properties cache
@@ -78,7 +78,7 @@ ggplot(style, aes(stylesMatched/(resolverAccessCount - stylesShared))) +
 
 ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`, resolverAccessCount, color=stylesMatched/(resolverAccessCount-stylesShared), size=stylesMatched/(resolverAccessCount-stylesShared))) + geom_point(alpha=0.5) + scale_y_log10() + theme(legend.position="top") + guides(color=FALSE)
 
-ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`/resolverAccessCount, stylesMatched/(resolverAccessCount-stylesShared)))+ geom_point() + scale_x_log10()
+ggplot(style[style$resolverAccessCount < 2000, ], aes(`Document::updateStyle`/resolverAccessCount, stylesMatched/(resolverAccessCount-stylesShared)))+ geom_point(alpha=0.5) + scale_x_log10()
 ```
 
 
