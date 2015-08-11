@@ -15,8 +15,7 @@ library(ggplot2)
 
 ```{r}
 data <- jsonlite::fromJSON(file("style.json"))
-data <- data$values
-style <- data[data$name == 'style_update_stats', ]
+style <- data$values[data$values$name == 'style_update_stats', ]
 style <- style$value
 style$overhead = NULL
 style <- style[style$resolverAccessCount > 0, ]
@@ -25,8 +24,36 @@ style <- as.data.frame(style)
 
 Based on `r nrow(style)` `Document::updateStyle` observations.
 
-Callers of Document::updateStyle
---------------------------------
+Style update
+------------
+```{r}
+ggplot(style, aes(`Document::updateStyle`)) +
+  geom_line(stat="density") + scale_x_log10()
+
+tmp <- reshape2::melt(data.frame(list(pseudo=style$counters$pseudoElementsStyled, element=style$counters$elementsStyled)))
+colnames(tmp) <- c('kind', 'resolverAccessCount')
+
+ggplot(tmp, aes(resolverAccessCount)) +
+  geom_density(aes(y=..count.., fill=kind), alpha = 0.5, position="stack") + scale_x_log10()
+```
+
+Callees
+-------
+```{r}
+tmp <- reshape2::melt(style$children)
+colnames(tmp) <- c('child', 'duration')
+childTime <- round(sum(na.omit(tmp$duration)) / sum(na.omit(style$`Document::updateStyle`)), 4) * 100
+```
+
+`r childTime`% of thread time spent in traced children.
+
+```{r}
+ggplot(tmp, aes(duration)) +
+  geom_density(aes(y=..count.., fill=child), position="stack", size=0) + scale_x_log10()
+```
+
+Callers
+-------
 ```{r}
 v8 <- style[unlist(lapply(style$ancestors, function(x)'V8.Execute' %in% x)), ]
 v8_stack <- nrow(v8) / nrow(style)
@@ -45,7 +72,6 @@ for (i in 1:5) {
     return(ifelse(is.null(v), NA, v))
   }))
 }
-
 
 treemap::treemap(style, index=c("ancestor1", "ancestor2", "ancestor3", "ancestor4", "ancestor5"), vSize=c("Document::updateStyle"))
 ```
