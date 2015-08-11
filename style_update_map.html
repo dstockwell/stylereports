@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<!--
+Copyright (c) 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<link rel="import" href="/perf_insights/value/value.html">
+
+<script>
+perf_insights.defineMapFunction(function(results, run_info, model) {
+  model.iterateAllEvents(function(event) {
+    if (event.title == 'Document::updateStyle') {
+      var data = {};
+      data[event.title] = event.cpuDuration;
+      var args = event.args || {};
+      for (var k in args) {
+        data[k] = args[k];
+      }
+      var children = data.children = {};
+      for (var subSlice of event.subSlices) {
+        children[subSlice.title] = subSlice.cpuDuration;
+      }
+      var ancestors = data.ancestors = [];
+      var parent = event.parentSlice;
+      while (parent) {
+        if (parent.title != 'overhead' && parent.title != 'toplevel') {
+          ancestors.push(parent.title);
+        }
+        parent = parent.parentSlice;
+      }
+      // Erroneously set to `true` in some earlier revisions.
+      if (typeof data.counters != 'object') {
+        data.counters = {};
+      }
+      results.addValue(new perf_insights.v.DictValue(run_info, 'style_update_stats', data));
+    }
+  });
+});
+</script>
