@@ -5,9 +5,10 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
 <link rel="import" href="/perf_insights/value/value.html">
+<link rel="import" href="/perf_insights/map_function.html">
 
 <script>
-perf_insights.defineMapFunction(function(results, run_info, model) {
+function styleUpdate(results, runInfo, model) {
   model.iterateAllEvents(function(event) {
     if (event.title == 'Document::updateStyle') {
       var data = {};
@@ -32,8 +33,16 @@ perf_insights.defineMapFunction(function(results, run_info, model) {
       if (typeof data.counters != 'object') {
         data.counters = {};
       }
-      results.addValue(new perf_insights.v.DictValue(run_info, 'style_update_stats', data));
+      results.addValue(new pi.v.DictValue(runInfo, 'style_update_stats', data));
     }
   });
+}
+
+tr.exportTo('pie', function() {
+  pi.MapFunction.register(styleUpdate);
+
+  return {
+    styleUpdate: styleUpdate
+  };
 });
 </script>
