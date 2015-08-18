@@ -9,6 +9,14 @@ found in the LICENSE file.
 
 <script>
 function styleUpdate(results, runInfo, model) {
+  var stackId = 0;
+  var irId = 0;
+  model.interaction_records.forEach(function(ir) {
+    ir.id = irId++;
+    ir.associatedEvents.forEach(function(event) {
+      event.ir = ir;
+    });
+  });
   model.iterateAllEvents(function(event) {
     if (event.title == 'Document::updateStyle') {
       var data = {};
@@ -22,16 +30,29 @@ function styleUpdate(results, runInfo, model) {
         children[subSlice.title] = subSlice.cpuDuration;
       }
       var ancestors = data.ancestors = [];
+      var topAncestor = event;
       var parent = event.parentSlice;
       while (parent) {
         if (parent.title != 'overhead' && parent.title != 'toplevel') {
           ancestors.push(parent.title);
+          topAncestor = parent;
         }
         parent = parent.parentSlice;
       }
+      if (!topAncestor.stackId) {
+        topAncestor.stackId = ++stackId;
+      }
+      data.stackId = topAncestor.stackId;
       // Erroneously set to `true` in some earlier revisions.
       if (typeof data.counters != 'object') {
         data.counters = {};
+      }
+      data.rail = {type: 'unknown', id: 'unknown'};
+      if (event.ir) {
+        data.rail = {
+          type: event.ir.railTypeName,
+          id: event.ir.id,
+        };
       }
       results.addValue(new pi.v.DictValue(runInfo, 'style_update_stats', data));
     }
