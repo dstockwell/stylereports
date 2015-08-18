@@ -43,9 +43,6 @@ tmp <- ddply(tmp, .(id), summarize, `Document::updateStyle`=sum(time))
 ggplot(tmp, aes(`Document::updateStyle`)) +
   geom_line(stat="density") + scale_x_log10() + labs(title = "Density of updates aggregated by task")
 
-ggplot(style, aes(`Document::updateStyle`)) +
-  geom_line(stat="density") + scale_x_log10()
-
 tmp <- reshape2::melt(data.frame(list(pseudo=style$counters$pseudoElementsStyled, element=style$counters$elementsStyled)))
 colnames(tmp) <- c('kind', 'resolverAccessCount')
 
