@@ -29,7 +29,20 @@ Based on `r nrow(style)` `Document::updateStyle` observations over `r length(uni
 
 Style update
 ------------
+
 ```{r}
+ggplot(style, aes(`Document::updateStyle`)) +
+  geom_line(stat="density") + scale_x_log10() + labs(title = "Density of individual updates")
+
+tmp <- style
+tmp <- data.frame(list(
+  id=paste0(tmp$run, '-', tmp$stackId),
+  time=tmp$`Document::updateStyle`))
+tmp <- ddply(tmp, .(id), summarize, `Document::updateStyle`=sum(time))
+
+ggplot(tmp, aes(`Document::updateStyle`)) +
+  geom_line(stat="density") + scale_x_log10() + labs(title = "Density of updates aggregated by task")
+
 ggplot(style, aes(`Document::updateStyle`)) +
   geom_line(stat="density") + scale_x_log10()
 

@@ -3,7 +3,7 @@ Based on 28202 `Document::updateStyle` observations over 801 runs.
 Style update
 ------------
 
-![](style_files/figure-markdown_github/unnamed-chunk-2-1.png) ![](style_files/figure-markdown_github/unnamed-chunk-2-2.png)
+![](style_files/figure-markdown_github/unnamed-chunk-2-1.png) ![](style_files/figure-markdown_github/unnamed-chunk-2-2.png) ![](style_files/figure-markdown_github/unnamed-chunk-2-3.png) ![](style_files/figure-markdown_github/unnamed-chunk-2-4.png)
 
 Rail
 ----
