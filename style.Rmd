@@ -10,19 +10,22 @@ output:
 
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+library(plyr)
 library(ggplot2)
 ```
 
 ```{r}
 data <- jsonlite::fromJSON(file("style.json"))
-style <- data$values[data$values$name == 'style_update_stats', ]
-style <- style$value
+runs <- data$values[data$values$name == 'style_update_stats', ]
+style <- runs$value
+style$run <- runs$run_id
 style$overhead = NULL
 style <- style[style$resolverAccessCount > 0, ]
 style <- as.data.frame(style)
+style$childTime = rowSums(style$children[colnames(style$children)], na.rm=TRUE)
 ```
 
-Based on `r nrow(style)` `Document::updateStyle` observations.
+Based on `r nrow(style)` `Document::updateStyle` observations over `r length(unique(style$run))` runs. 
 
 Style update
 ------------
@@ -35,6 +38,40 @@ colnames(tmp) <- c('kind', 'resolverAccessCount')
 
 ggplot(tmp, aes(resolverAccessCount)) +
   geom_density(aes(y=..count.., fill=kind), alpha = 0.5, position="stack") + scale_x_log10()
+```
+
+Rail
+----
+```{r}
+tmp <- data.frame(list(
+  rail=style$rail$type,
+  id=paste0(style$run, '-', style$rail$id),
+  time=style$`Document::updateStyle`))
+tmp <- tmp[complete.cases(tmp),]
+tmp <- ddply(tmp, .(rail, id), summarize, time=sum(time))
+```
+
+Found `r nrow(tmp[tmp$rail != 'unknown',])` RAIL interaction records.
+`r round(nrow(style[style$rail$type == 'unknown',]) / nrow(style), 4) * 100`%
+of observations were not classified:
+
+* `r nrow(tmp[tmp$rail == 'rail_response',])` response
+* `r nrow(tmp[tmp$rail == 'rail_animate',])` animate
+* `r nrow(tmp[tmp$rail == 'rail_idle',])` idle
+* `r nrow(tmp[tmp$rail == 'rail_load',])` load
+
+Individual observations:
+
+```{r}
+ggplot(style, aes(`Document::updateStyle`, color=rail$type)) +
+  geom_line(stat="density") + scale_x_log10(breaks=c(1,16,100))
+```
+
+Aggregated by RAIL iteraction record:
+
+```{r}
+ggplot(tmp[tmp$rail == 'rail_load' | tmp$rail == 'rail_response',], aes(time, color=rail)) +
+  geom_line(stat="density") + scale_x_log10(breaks=c(1,16,100))
 ```
 
 Callees
