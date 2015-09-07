@@ -24,6 +24,7 @@ num_observations <- nrow(cssparser)
 under_alloc <- cssparser[cssparser$tokenCount - floor(cssparser$length / 3) > 0, ]
 over_alloc <- cssparser[floor(cssparser$length / 3) - cssparser$tokenCount > 0, ]
 max_over_alloc = max(floor(over_alloc$length / 3) - over_alloc$tokenCount)
+ua_time = sum(cssparser[cssparser$mode == 5, ]$`CSSParserImpl::parseStyleSheet`) / sum(cssparser$`CSSParserImpl::parseStyleSheet`)
 ```
 
 Based on `r nrow(cssparser)` observations.
@@ -41,7 +42,9 @@ characters_per_token <- cssparser$length / cssparser$tokenCount
 quantile(characters_per_token, c(0.25, 0.75, 0.90, 0.95, 0.99, 1))
 ```
 
-`r round(nrow(cssparser[cssparser$mode == 5, ]) / nrow(cssparser) * 100, 2)`% of sheets parsed were useragent sheets.
+`r round(nrow(cssparser[cssparser$mode == 5, ]) / nrow(cssparser) * 100, 2)`% of sheets parsed were useragent sheets
+representing `r round(ua_time * 100, 2)`%
+of time in the parser.
 
 ```{r}
 ua_sheets <- cssparser[cssparser$mode == 5, ]

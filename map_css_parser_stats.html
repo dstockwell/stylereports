@@ -5,9 +5,10 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
 <link rel="import" href="/perf_insights/value/value.html">
+<link rel="import" href="/perf_insights/map_function.html">
 
 <script>
-perf_insights.defineMapFunction(function(results, run_info, model) {
+function cssparser(results, run_info, model) {
   model.iterateAllEvents(function(event) {
     if (event.title == 'CSSParserImpl::parseStyleSheet') {
       var data = {};
@@ -19,8 +20,14 @@ perf_insights.defineMapFunction(function(results, run_info, model) {
       for (var subSlice of event.subSlices) {
         data[subSlice.title] = subSlice.cpuDuration;
       }
-      results.addValue(new perf_insights.v.DictValue(run_info, 'css_parser_stats', data));
+      results.addValue(new pi.v.DictValue(run_info, 'css_parser_stats', data));
     }
   });
+}
+
+tr.exportTo('pie', function() {
+  pi.MapFunction.register(cssparser);
+
+  return {cssparser};
 });
 </script>
